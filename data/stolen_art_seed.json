@@ -234,8 +234,8 @@
     "latitude": 30.0444,
     "longitude": 31.2357,
     "image_url": "",
-    "source_url": "https://artcrimes.fbi.gov/nsaf-view?searchText=Poppy%20Flowers",
-    "source_name": "Public reports",
+    "source_url": "https://artcrimes.fbi.gov/",
+    "source_name": "FBI National Stolen Art File",
     "notes": "Famous Van Gogh work reported stolen from Cairo in 2010.",
     "risk_score": 53.9
   },
@@ -314,8 +314,8 @@
     "latitude": 48.2038,
     "longitude": 16.3618,
     "image_url": "",
-    "source_url": "https://www.khm.at/en/objectdb/detail/85731/",
-    "source_name": "Kunsthistorisches Museum",
+    "source_url": "https://en.wikipedia.org/wiki/Cellini_Salt_Cellar",
+    "source_name": "Cellini Salt Cellar case summary",
     "notes": "Renaissance gold sculpture recovered in Austria.",
     "risk_score": 28.6
   },
@@ -335,7 +335,7 @@
     "longitude": 2.2979,
     "image_url": "",
     "source_url": "https://www.interpol.int/Crimes/Cultural-heritage-crime/Stolen-Works-of-Art-Database",
-    "source_name": "Interpol cultural heritage crime information",
+    "source_name": "INTERPOL Stolen Works of Art Database",
     "notes": "Reported stolen from the Paris museum in 2010; recovery status remains unresolved in this teaching dataset.",
     "risk_score": 51.9
   },
@@ -355,7 +355,7 @@
     "longitude": 2.2979,
     "image_url": "",
     "source_url": "https://www.interpol.int/Crimes/Cultural-heritage-crime/Stolen-Works-of-Art-Database",
-    "source_name": "Interpol cultural heritage crime information",
+    "source_name": "INTERPOL Stolen Works of Art Database",
     "notes": "One of five works stolen in the Paris museum theft.",
     "risk_score": 51.0
   },
@@ -375,7 +375,7 @@
     "longitude": 2.2979,
     "image_url": "",
     "source_url": "https://www.interpol.int/Crimes/Cultural-heritage-crime/Stolen-Works-of-Art-Database",
-    "source_name": "Interpol cultural heritage crime information",
+    "source_name": "INTERPOL Stolen Works of Art Database",
     "notes": "High-value painting stolen in Paris in 2010.",
     "risk_score": 51.6
   },
@@ -394,8 +394,8 @@
     "latitude": 51.9244,
     "longitude": 4.4777,
     "image_url": "",
-    "source_url": "https://artobserved.com/2012/10/the-kunsthal-rotterdam-in-the-netherlands-suffered-the-loss-of-several-valuable-paintings-in-a-theft-around-300-a-m-on-october-16th-among-them-picasso-monet-gauguin-matisse-and-lucian-freud/",
-    "source_name": "BBC public report",
+    "source_url": "https://en.wikipedia.org/wiki/Kunsthal",
+    "source_name": "Kunsthal public case summary",
     "notes": "Included as unknown/unresolved status for dashboard comparison.",
     "risk_score": 33.0
   },
@@ -414,8 +414,8 @@
     "latitude": 51.9244,
     "longitude": 4.4777,
     "image_url": "",
-    "source_url": "https://artobserved.com/2012/10/the-kunsthal-rotterdam-in-the-netherlands-suffered-the-loss-of-several-valuable-paintings-in-a-theft-around-300-a-m-on-october-16th-among-them-picasso-monet-gauguin-matisse-and-lucian-freud/",
-    "source_name": "BBC public report",
+    "source_url": "https://en.wikipedia.org/wiki/Kunsthal",
+    "source_name": "Kunsthal public case summary",
     "notes": "Stolen in the Kunsthal Rotterdam theft.",
     "risk_score": 33.4
   },
@@ -434,8 +434,8 @@
     "latitude": 51.9244,
     "longitude": 4.4777,
     "image_url": "",
-    "source_url": "https://artobserved.com/2012/10/the-kunsthal-rotterdam-in-the-netherlands-suffered-the-loss-of-several-valuable-paintings-in-a-theft-around-300-a-m-on-october-16th-among-them-picasso-monet-gauguin-matisse-and-lucian-freud/",
-    "source_name": "BBC public report",
+    "source_url": "https://en.wikipedia.org/wiki/Kunsthal",
+    "source_name": "Kunsthal public case summary",
     "notes": "Kunsthal Rotterdam theft case record.",
     "risk_score": 33.1
   },
@@ -474,8 +474,8 @@
     "latitude": 37.7749,
     "longitude": -122.4194,
     "image_url": "",
-    "source_url": "https://abc7news.com/post/exclusive-brazen-thief-steals-dali-piece-from-san-francisco-gallery/5618908/",
-    "source_name": "Public news report",
+    "source_url": "https://en.wikipedia.org/wiki/Art_theft",
+    "source_name": "Public art-theft case summary",
     "notes": "Small-value case useful for contrast against museum thefts.",
     "risk_score": 12.8
   },
@@ -495,7 +495,7 @@
     "longitude": 9.6934,
     "image_url": "",
     "source_url": "https://www.smithsonianmag.com/smart-news/painting-found-inside-walls-italian-gallery-may-be-stolen-klimt-180973757/",
-    "source_name": "BBC public report",
+    "source_name": "Kunsthal public case summary",
     "notes": "Found in the walls of the gallery after decades missing.",
     "risk_score": 31.5
   },

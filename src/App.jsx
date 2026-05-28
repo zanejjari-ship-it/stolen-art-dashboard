@@ -1,261 +1,239 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
-  LineChart, Line, PieChart, Pie, Cell, ScatterChart, Scatter, ZAxis, Legend
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Scatter,
+  ScatterChart,
+  Tooltip,
+  XAxis,
+  YAxis
 } from "recharts";
-import { Search, Database, RefreshCw, ExternalLink, ShieldAlert } from "lucide-react";
-import { getArtworks, getSummary, runDataRefresh } from "./lib/api.js";
+import { RefreshCw, Search, Database, ExternalLink, ShieldAlert, CheckCircle2 } from "lucide-react";
+import { buildSummary, fetchArtworks, filterArtworks } from "./api.js";
 
-const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-const numberFmt = new Intl.NumberFormat("en-US");
-const COLORS = ["#1f2937", "#4b5563", "#6b7280", "#9ca3af", "#d1d5db", "#111827"];
+const chartColors = ["#7c3aed", "#db2777", "#2563eb", "#16a34a", "#ea580c", "#0f766e", "#9333ea"];
 
-function KpiCard({ label, value, help }) {
+function money(value) {
+  return `$${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}m`;
+}
+
+function KpiCard({ label, value, note }) {
   return (
     <section className="kpi-card">
-      <span>{label}</span>
+      <p>{label}</p>
       <strong>{value}</strong>
-      <small>{help}</small>
+      <span>{note}</span>
     </section>
   );
 }
 
-function EmptyState({ message }) {
-  return <div className="empty-state">{message}</div>;
+function Badge({ status }) {
+  return <span className={`badge ${String(status).toLowerCase()}`}>{status}</span>;
 }
 
 export default function App() {
-  const [summary, setSummary] = useState(null);
   const [artworks, setArtworks] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("All");
   const [category, setCategory] = useState("All");
-  const [error, setError] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [warning, setWarning] = useState("");
+  const [fromDatabase, setFromDatabase] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState(null);
 
   async function loadData() {
+    setLoading(true);
     try {
-      setLoading(true);
-      setError("");
-      const [summaryData, artworkData] = await Promise.all([
-        getSummary(),
-        getArtworks({ q, status, category })
-      ]);
-      setSummary(summaryData);
-      setArtworks(artworkData.data || []);
-    } catch (err) {
-      console.error(err);
-      setError(err.message || "The dashboard API could not be loaded.");
+      const result = await fetchArtworks();
+      setArtworks(result.data);
+      setFromDatabase(result.fromDatabase);
+      setWarning(result.warning || "");
+      setLastRefresh(new Date());
     } finally {
       setLoading(false);
     }
   }
 
+  useEffect(() => {
+    loadData();
+  }, []);
 
-  async function handleRefreshPipeline() {
-    try {
-      setRefreshing(true);
-      setError("");
-      await runDataRefresh();
-      await loadData();
-    } catch (err) {
-      console.error(err);
-      setError((err.message || "Refresh failed.") + " If this says 401, add VITE_ETL_TOKEN in Netlify with the same value as ETL_TOKEN, then redeploy.");
-    } finally {
-      setRefreshing(false);
-    }
-  }
-
-  useEffect(() => { loadData(); }, [q, status, category]);
-
-  const categories = useMemo(() => {
-    const set = new Set((summary?.charts?.byCategory || []).map(item => item.name));
-    return ["All", ...Array.from(set).sort()];
-  }, [summary]);
-
-  const scatterData = useMemo(() => artworks.map(row => ({
-    ...row,
-    value: Number(row.estimated_value_usd_m || 0),
-    year: Number(row.theft_year || 0)
-  })), [artworks]);
-
-  const lastRunText = summary?.meta?.last_etl_run?.created_at
-    ? new Date(summary.meta.last_etl_run.created_at).toLocaleString()
-    : summary?.meta?.generated_at ? new Date(summary.meta.generated_at).toLocaleString() : "Not available";
+  const summary = useMemo(() => buildSummary(artworks), [artworks]);
+  const filtered = useMemo(() => filterArtworks(artworks, { q, status, category }), [artworks, q, status, category]);
+  const categories = useMemo(() => ["All", ...Array.from(new Set(artworks.map((a) => a.category))).sort()], [artworks]);
 
   return (
-    <main className="dashboard-shell">
+    <main className="app-shell">
       <header className="hero">
         <div>
-          <p className="eyebrow"><ShieldAlert size={18} /> Cultural Heritage Risk Analytics</p>
+          <span className="eyebrow">Art crime analytics</span>
           <h1>Stolen Artworks Intelligence Dashboard</h1>
-          <p className="hero-copy">
-            A deployed React dashboard with a serverless ETL pipeline and Supabase/PostgreSQL database for exploring high-profile stolen art cases by status, country, category, year, value, and recovery pattern.
+          <p>
+            A database-backed web dashboard for exploring stolen artworks by recovery status, theft year,
+            country, category, estimated value, and source documentation.
           </p>
-        </div>
-        <aside className="pipeline-card">
-          <Database size={24} />
-          <div>
-            <strong>{summary?.meta?.fromDatabase ? "Live database connected" : "Fallback sample data"}</strong>
-            <span>Last data refresh: {lastRunText}</span>
+          <div className="status-line">
+            <span className={fromDatabase ? "pill success" : "pill warning"}>
+              {fromDatabase ? <CheckCircle2 size={15} /> : <ShieldAlert size={15} />}
+              {fromDatabase ? "Connected to Supabase database" : "Using local fallback data"}
+            </span>
+            {lastRefresh && <span className="pill neutral">Last view refresh: {lastRefresh.toLocaleTimeString()}</span>}
           </div>
-          <button onClick={handleRefreshPipeline} disabled={loading || refreshing} className="refresh-button">
-            <RefreshCw size={16} /> {refreshing ? "Refreshing..." : "Run ETL + refresh"}
-          </button>
-        </aside>
+        </div>
+        <button className="refresh-button" onClick={loadData} disabled={loading}>
+          <RefreshCw size={18} className={loading ? "spin" : ""} />
+          {loading ? "Refreshing..." : "Refresh view"}
+        </button>
       </header>
 
-      {error && <div className="error-banner">{error}</div>}
+      {warning && <div className="warning-box">{warning}</div>}
 
       <section className="kpi-grid">
-        <KpiCard label="Total cases" value={numberFmt.format(summary?.kpis?.total_cases || 0)} help="Records in database" />
-        <KpiCard label="Missing cases" value={numberFmt.format(summary?.kpis?.missing_cases || 0)} help="Open/unrecovered records" />
-        <KpiCard label="Recovery rate" value={`${summary?.kpis?.recovery_rate || 0}%`} help="Recovered / total records" />
-        <KpiCard label="Estimated value" value={`${currency.format((summary?.kpis?.estimated_total_value_usd_m || 0) * 1_000_000)}`} help="Approx. public estimates" />
+        <KpiCard label="Total cases" value={summary.kpis.total_cases} note="Records in current dataset" />
+        <KpiCard label="Missing" value={summary.kpis.missing_cases} note="Still unresolved or not returned" />
+        <KpiCard label="Recovered" value={summary.kpis.recovered_cases} note={`${summary.kpis.recovery_rate}% recovery rate`} />
+        <KpiCard label="Estimated value" value={money(summary.kpis.estimated_total_value_usd_m)} note="Teaching/demo estimates" />
+        <KpiCard label="Average recovery time" value={`${summary.kpis.average_recovery_years} yrs`} note="For recovered cases only" />
       </section>
 
-      <section className="controls-card">
-        <label className="search-box">
-          <Search size={18} />
-          <input
-            value={q}
-            onChange={event => setQ(event.target.value)}
-            placeholder="Search title, artist, country, institution..."
-          />
-        </label>
-        <select value={status} onChange={event => setStatus(event.target.value)}>
-          {["All", "Missing", "Recovered", "Unknown"].map(option => <option key={option}>{option}</option>)}
+      <section className="panel controls-panel">
+        <div className="search-box">
+          <Search size={17} />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search title, artist, country, institution..." />
+        </div>
+        <select value={status} onChange={(e) => setStatus(e.target.value)}>
+          <option>All</option>
+          <option>Missing</option>
+          <option>Recovered</option>
+          <option>Unknown</option>
         </select>
-        <select value={category} onChange={event => setCategory(event.target.value)}>
-          {categories.map(option => <option key={option}>{option}</option>)}
+        <select value={category} onChange={(e) => setCategory(e.target.value)}>
+          {categories.map((c) => <option key={c}>{c}</option>)}
         </select>
       </section>
 
       <section className="chart-grid">
-        <article className="chart-card wide">
-          <div className="card-heading">
-            <h2>Theft timeline</h2>
-            <p>Cases by theft year and current status.</p>
-          </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={summary?.charts?.timeline || []} margin={{ left: 8, right: 18, top: 10, bottom: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" />
+        <div className="panel chart-panel wide">
+          <h2>Theft timeline</h2>
+          <ResponsiveContainer height={315}>
+            <AreaChart data={summary.charts.timeline}>
+              <defs>
+                <linearGradient id="timelineGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.55} />
+                  <stop offset="95%" stopColor="#7c3aed" stopOpacity={0.04} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis dataKey="year" />
               <YAxis allowDecimals={false} />
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="missing" stroke="#991b1b" strokeWidth={2.5} dot={false} />
-              <Line type="monotone" dataKey="recovered" stroke="#166534" strokeWidth={2.5} dot={false} />
-              <Line type="monotone" dataKey="unknown" stroke="#92400e" strokeWidth={2.5} dot={false} />
-            </LineChart>
+              <Area type="monotone" dataKey="count" name="All cases" stroke="#7c3aed" fill="url(#timelineGradient)" strokeWidth={3} />
+            </AreaChart>
           </ResponsiveContainer>
-        </article>
+        </div>
 
-        <article className="chart-card">
-          <div className="card-heading">
-            <h2>Status mix</h2>
-            <p>Missing vs recovered vs unknown.</p>
-          </div>
-          <ResponsiveContainer width="100%" height={260}>
+        <div className="panel chart-panel">
+          <h2>Status</h2>
+          <ResponsiveContainer height={315}>
             <PieChart>
-              <Pie data={summary?.charts?.byStatus || []} dataKey="count" nameKey="name" outerRadius={95} label>
-                {(summary?.charts?.byStatus || []).map((_, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
+              <Pie data={summary.charts.byStatus} dataKey="count" nameKey="name" outerRadius={104} label>
+                {summary.charts.byStatus.map((_, index) => <Cell key={index} fill={chartColors[index % chartColors.length]} />)}
               </Pie>
               <Tooltip />
+              <Legend />
             </PieChart>
           </ResponsiveContainer>
-        </article>
+        </div>
 
-        <article className="chart-card">
-          <div className="card-heading">
-            <h2>Categories</h2>
-            <p>Records by artwork type.</p>
-          </div>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={summary?.charts?.byCategory || []} margin={{ left: 4, right: 18, top: 10, bottom: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
+        <div className="panel chart-panel">
+          <h2>Categories</h2>
+          <ResponsiveContainer height={315}>
+            <BarChart data={summary.charts.byCategory.slice(0, 8)} layout="vertical" margin={{ left: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis type="number" allowDecimals={false} />
+              <YAxis type="category" dataKey="name" width={88} />
+              <Tooltip />
+              <Bar dataKey="count" name="Cases" radius={[0, 8, 8, 0]} fill="#2563eb" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="panel chart-panel">
+          <h2>Top countries</h2>
+          <ResponsiveContainer height={315}>
+            <BarChart data={summary.charts.byCountry.slice(0, 8)}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="name" angle={-25} textAnchor="end" height={75} />
               <YAxis allowDecimals={false} />
               <Tooltip />
-              <Bar dataKey="count" fill="#374151" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="count" name="Cases" fill="#db2777" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        </article>
+        </div>
 
-        <article className="chart-card wide">
-          <div className="card-heading">
-            <h2>Value vs year</h2>
-            <p>Bubble size indicates the estimated value in USD millions; filters affect this chart.</p>
-          </div>
-          <ResponsiveContainer width="100%" height={310}>
-            <ScatterChart margin={{ top: 20, right: 24, bottom: 16, left: 0 }}>
-              <CartesianGrid />
-              <XAxis type="number" dataKey="year" name="Theft year" domain={[1900, 2026]} />
-              <YAxis type="number" dataKey="value" name="USD millions" />
-              <ZAxis type="number" dataKey="value" range={[80, 900]} />
-              <Tooltip cursor={{ strokeDasharray: "3 3" }} formatter={(value, name) => name === "value" ? [`$${value}m`, "Value"] : value} />
-              <Scatter data={scatterData} fill="#111827" />
+        <div className="panel chart-panel wide">
+          <h2>Estimated value by theft year</h2>
+          <ResponsiveContainer height={315}>
+            <ScatterChart>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="year" type="number" name="Theft year" domain={[1900, "dataMax"]} />
+              <YAxis dataKey="value" type="number" name="Estimated value" tickFormatter={money} />
+              <Tooltip cursor={{ strokeDasharray: "3 3" }} formatter={(value, name) => name === "value" ? money(value) : value} />
+              <Scatter name="Artworks" data={summary.charts.scatter} fill="#16a34a" />
             </ScatterChart>
           </ResponsiveContainer>
-        </article>
-
-        <article className="chart-card">
-          <div className="card-heading">
-            <h2>Countries</h2>
-            <p>Top theft locations in the dataset.</p>
-          </div>
-          <ResponsiveContainer width="100%" height={310}>
-            <BarChart data={(summary?.charts?.byCountry || []).slice(0, 8)} layout="vertical" margin={{ left: 70, right: 18, top: 10, bottom: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" allowDecimals={false} />
-              <YAxis type="category" dataKey="name" />
-              <Tooltip />
-              <Bar dataKey="count" fill="#4b5563" radius={[0, 8, 8, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </article>
+        </div>
       </section>
 
-      <section className="table-card">
-        <div className="card-heading">
-          <h2>Case-level database</h2>
-          <p>{loading ? "Loading..." : `${artworks.length} matching cases`}</p>
-        </div>
-        {artworks.length === 0 ? <EmptyState message="No cases match the current filters." /> : (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Artwork</th>
-                  <th>Artist</th>
-                  <th>Status</th>
-                  <th>Location</th>
-                  <th>Years</th>
-                  <th>Value</th>
-                  <th>Risk</th>
-                  <th>Source</th>
-                </tr>
-              </thead>
-              <tbody>
-                {artworks.map(row => (
-                  <tr key={row.id}>
-                    <td><strong>{row.title}</strong><small>{row.institution}</small></td>
-                    <td>{row.artist}</td>
-                    <td><span className={`status-pill ${row.status.toLowerCase()}`}>{row.status}</span></td>
-                    <td>{row.city_of_theft}, {row.country_of_theft}</td>
-                    <td>{row.theft_year}{row.recovery_year ? ` -> ${row.recovery_year}` : " -> open"}</td>
-                    <td>${numberFmt.format(Math.round((row.estimated_value_usd_m || 0) * 1_000_000))}</td>
-                    <td>{row.risk_score}</td>
-                    <td>
-                      {row.source_url ? <a href={row.source_url} target="_blank" rel="noreferrer">Open <ExternalLink size={13} /></a> : "-"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <section className="panel table-panel">
+        <div className="table-header">
+          <div>
+            <h2>Case database</h2>
+            <p>{filtered.length} visible record(s) after filters.</p>
           </div>
-        )}
+          <div className="db-note"><Database size={16} /> Supabase table: stolen_artworks</div>
+        </div>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Artwork</th>
+                <th>Artist</th>
+                <th>Place</th>
+                <th>Year</th>
+                <th>Status</th>
+                <th>Value</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((row) => (
+                <tr key={row.id}>
+                  <td><strong>{row.title}</strong><small>{row.category}</small></td>
+                  <td>{row.artist}</td>
+                  <td>{row.city_of_theft}, {row.country_of_theft}<small>{row.institution}</small></td>
+                  <td>{row.theft_year}</td>
+                  <td><Badge status={row.status} /></td>
+                  <td>{money(row.estimated_value_usd_m)}</td>
+                  <td>
+                    <a href={row.source_url} target="_blank" rel="noreferrer" className="source-link">
+                      {row.source_name || "Source"} <ExternalLink size={13} />
+                    </a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
     </main>
   );
