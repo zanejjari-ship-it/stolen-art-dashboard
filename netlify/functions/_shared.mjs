@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 
 const jsonHeaders = {
@@ -12,8 +11,8 @@ export function response(statusCode, body) {
 }
 
 export function getSupabase() {
-  const url = (process.env.SUPABASE_URL || "").trim().replace(/\/+$/, "");
-  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return null;
   return createClient(url, key, { auth: { persistSession: false } });
 }
@@ -45,20 +44,7 @@ export function normalizeArtwork(item) {
 }
 
 export function loadFallbackData() {
-  const candidates = [
-    path.join(process.cwd(), "data", "stolen_art_seed.json"),
-    path.join(process.cwd(), "stolen-art-dashboard-v3", "data", "stolen_art_seed.json"),
-    path.join(process.cwd(), "stolen-art-dashboard-v2", "data", "stolen_art_seed.json"),
-    path.join(process.cwd(), "..", "data", "stolen_art_seed.json"),
-    path.join(path.dirname(new URL(import.meta.url).pathname), "..", "..", "data", "stolen_art_seed.json")
-  ];
-
-  const file = candidates.find((candidate) => fs.existsSync(candidate));
-
-  if (!file) {
-    throw new Error(`Seed data file not found. Checked: ${candidates.join(" | ")}`);
-  }
-
+  const file = new URL("../../data/stolen_art_seed.json", import.meta.url);
   return JSON.parse(fs.readFileSync(file, "utf-8")).map(normalizeArtwork);
 }
 
