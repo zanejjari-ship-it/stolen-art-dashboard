@@ -12,3 +12,10 @@ export async function getArtworks({ q = "", status = "All", category = "All" } =
   const params = new URLSearchParams({ q, status, category });
   return safeFetchJSON(`/.netlify/functions/artworks?${params.toString()}`);
 }
+
+
+export async function runDataRefresh() {
+  const token = import.meta.env.VITE_ETL_TOKEN || "";
+  const suffix = token ? `?token=${encodeURIComponent(token)}` : "";
+  return safeFetchJSON(`/.netlify/functions/refresh-data${suffix}`);
+}

@@ -4,7 +4,7 @@ import {
   LineChart, Line, PieChart, Pie, Cell, ScatterChart, Scatter, ZAxis, Legend
 } from "recharts";
 import { Search, Database, RefreshCw, ExternalLink, ShieldAlert } from "lucide-react";
-import { getArtworks, getSummary } from "./lib/api.js";
+import { getArtworks, getSummary, runDataRefresh } from "./lib/api.js";
 
 const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 const numberFmt = new Intl.NumberFormat("en-US");
@@ -32,6 +32,7 @@ export default function App() {
   const [status, setStatus] = useState("All");
   const [category, setCategory] = useState("All");
   const [error, setError] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
   async function loadData() {
     try {
@@ -48,6 +49,21 @@ export default function App() {
       setError(err.message || "The dashboard API could not be loaded.");
     } finally {
       setLoading(false);
+    }
+  }
+
+
+  async function handleRefreshPipeline() {
+    try {
+      setRefreshing(true);
+      setError("");
+      await runDataRefresh();
+      await loadData();
+    } catch (err) {
+      console.error(err);
+      setError((err.message || "Refresh failed.") + " If this says 401, add VITE_ETL_TOKEN in Netlify with the same value as ETL_TOKEN, then redeploy.");
+    } finally {
+      setRefreshing(false);
     }
   }
 
@@ -84,8 +100,8 @@ export default function App() {
             <strong>{summary?.meta?.fromDatabase ? "Live database connected" : "Fallback sample data"}</strong>
             <span>Last data refresh: {lastRunText}</span>
           </div>
-          <button onClick={loadData} disabled={loading} className="refresh-button">
-            <RefreshCw size={16} /> Refresh view
+          <button onClick={handleRefreshPipeline} disabled={loading || refreshing} className="refresh-button">
+            <RefreshCw size={16} /> {refreshing ? "Refreshing..." : "Run ETL + refresh"}
           </button>
         </aside>
       </header>

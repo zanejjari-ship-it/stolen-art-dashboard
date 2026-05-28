@@ -80,6 +80,6 @@ https://YOUR-SITE.netlify.app/.netlify/functions/refresh-data?token=YOUR_ETL_TOK
 - **Data refresh mechanism (2 pts):** Netlify scheduled function + protected manual refresh endpoint.
 - **Communication (2 pts):** one-page executive summary in Markdown and PDF-ready format.
 
-## Important note
 
-This is a teaching/demo dataset compiled from public case descriptions and source links. It is not an official law-enforcement stolen-art registry. For real investigations, the FBI National Stolen Art File, Interpol database, or local law-enforcement sources should be consulted directly.
+
+
